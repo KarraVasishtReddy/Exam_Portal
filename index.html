@@ -69,7 +69,12 @@
             <button class="btn-success" onclick="switchTab('results')">Gradebook</button>
             <button class="btn-danger" onclick="location.reload()">Logout</button>
         </div>
-
+<div class="card" style="border: 2px solid var(--primary); background: #f0f9fa;">
+    <h3>🚀 Bulk Import (50+ Questions)</h3>
+    <p style="font-size: 0.85rem; margin-bottom: 10px;">Upload a <b>questions.json</b> file to add questions instantly.</p>
+    <input type="file" id="bulkInput" accept=".json" onchange="uploadBulkJSON(this)">
+    <div id="bulkStatus" style="font-size: 0.9rem; font-weight: bold; margin-top: 10px; color: var(--primary);"></div>
+</div>
         <div id="tabStudents" class="hidden">
             <div class="card">
                 <h3>Create New Student Account</h3>
@@ -272,7 +277,35 @@
             });
             document.getElementById('studentView').innerHTML = `<div class="card" style="text-align:center"><h1>Submitted Successfully</h1></div>`;
         }
+async function uploadBulkJSON(input) {
+    const file = input.files[0];
+    if (!file) return;
 
+    const status = document.getElementById('bulkStatus');
+    status.innerText = "⏳ Reading file and uploading...";
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            const response = await fetch(API + '/bank/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (result.success) {
+                status.style.color = "green";
+                status.innerText = `✅ Success! ${result.count} questions added to the bank.`;
+                loadBank(); // Refreshes the question bank list automatically
+            }
+        } catch (err) {
+            status.style.color = "red";
+            status.innerText = "❌ Error: Invalid JSON file format.";
+        }
+    };
+    reader.readAsText(file);
+}
         // NAVIGATION
         function switchTab(t) {
             ['tabStudents','tabCreate','tabResults'].forEach(x => document.getElementById(x).classList.add('hidden'));
